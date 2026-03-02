@@ -17,24 +17,30 @@ def can_make_request(service_name: str) -> bool:
         return True # Non-tracked service
         
     today = datetime.date.today().isoformat()
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    # Ensure a record for today exists
-    c.execute(
-        "INSERT OR IGNORE INTO api_usage (service, call_date, call_count) VALUES (?, ?, ?)",
-        (service_name, today, 0)
-    )
-    
-    c.execute(
-        "SELECT call_count FROM api_usage WHERE service = ? AND call_date = ?",
-        (service_name, today)
-    )
-    result = c.fetchone()
-    current_calls = result['call_count'] if result else 0
-    
-    conn.commit()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        
+        # Ensure a record for today exists
+        c.execute(
+            "INSERT OR IGNORE INTO api_usage (service, call_date, call_count) VALUES (?, ?, ?)",
+            (service_name, today, 0)
+        )
+        
+        c.execute(
+            "SELECT call_count FROM api_usage WHERE service = ? AND call_date = ?",
+            (service_name, today)
+        )
+        result = c.fetchone()
+        current_calls = result['call_count'] if result else 0
+        
+        conn.commit()
+    except Exception as e:
+        logging.error(f"Database error in can_make_request ({service_name}): {e}")
+        current_calls = 0 # Default to allowing request if DB fails temporarily
+    finally:
+        if 'conn' in locals() and conn:
+            conn.close()
 
     if current_calls >= LIMITS[service_name]:
         logging.warning(f"RATE LIMIT REACHED for {service_name}. {current_calls}/{LIMITS[service_name]} calls made today.")
@@ -51,16 +57,21 @@ def record_api_call(service_name: str):
         return
         
     today = datetime.date.today().isoformat()
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    c.execute(
-        "UPDATE api_usage SET call_count = call_count + 1 WHERE service = ? AND call_date = ?",
-        (service_name, today)
-    )
-    
-    conn.commit()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        
+        c.execute(
+            "UPDATE api_usage SET call_count = call_count + 1 WHERE service = ? AND call_date = ?",
+            (service_name, today)
+        )
+        
+        conn.commit()
+    except Exception as e:
+        logging.error(f"Database error in record_api_call ({service_name}): {e}")
+    finally:
+        if 'conn' in locals() and conn:
+            conn.close()
 
 def get_remaining_calls(service_name: str) -> int:
     """Helper to check remaining calls."""
