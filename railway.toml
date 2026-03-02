@@ -1,0 +1,10 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "sleep infinity"
+restartPolicyType = "ON_FAILURE"
+
+[cron]
+schedule = "0 2,8,14,23 * * *"
+command = "python scheduler.py"
