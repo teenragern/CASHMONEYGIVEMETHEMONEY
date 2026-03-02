@@ -9,7 +9,13 @@ def get_db_connection():
     """Returns a connection to the SQLite database."""
     # Ensure the directory exists if DB_PATH contains subdirectories
     os.makedirs(os.path.dirname(DB_PATH) if os.path.dirname(DB_PATH) else ".", exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    
+    # Increase timeout to 20 seconds to avoid "database is locked" errors under load
+    conn = sqlite3.connect(DB_PATH, timeout=20.0)
+    
+    # Enable Write-Ahead Logging (WAL) which allows concurrent reading and writing
+    conn.execute('PRAGMA journal_mode=WAL;')
+    
     conn.row_factory = sqlite3.Row
     return conn
 
