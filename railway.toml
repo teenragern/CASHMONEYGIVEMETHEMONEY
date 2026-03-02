@@ -2,7 +2,6 @@
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "sleep infinity"
 restartPolicyType = "ON_FAILURE"
 
 [cron]
