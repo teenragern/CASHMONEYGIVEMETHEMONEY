@@ -2,6 +2,7 @@
 builder = "NIXPACKS"
 
 [deploy]
+startCommand = "python scheduler.py"
 restartPolicyType = "ON_FAILURE"
 
 [cron]
